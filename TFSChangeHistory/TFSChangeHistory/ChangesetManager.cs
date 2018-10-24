@@ -1,4 +1,4 @@
-﻿using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
 using System;
 using System.Collections;
@@ -20,21 +20,25 @@ namespace TFSChangeHistory
                 tpc.EnsureAuthenticated();
                 VersionControlServer vcs = tpc.GetService<VersionControlServer>();
 
-                VersionSpec fromDateVersion = new DateVersionSpec(request.FromDate.AddDays(-1));
-                VersionSpec toDateVersion = new DateVersionSpec(request.ToDate);
+				VersionSpec fromDateVersion = null;
+				VersionSpec toDateVersion = null;
+				if (request.FromDate != DateTime.MinValue || request.ToDate != DateTime.MinValue)
+				{
+					fromDateVersion = new DateVersionSpec(request.FromDate.AddDays(-1)); 
+					toDateVersion = new DateVersionSpec(request.ToDate);
+				}
 
                 IEnumerable changesets = vcs.QueryHistory(request.ReleaseBranchUrl, VersionSpec.Latest,
                     0, RecursionType.Full, null, fromDateVersion, toDateVersion, int.MaxValue, true, true);
 
                 var ignoreUsers = request.IgnoreFromUsers;
-
-                foreach (Changeset changeset in changesets)
-                {
-                    if (ignoreUsers.Contains(changeset.Owner) == false)
-                    {
-                        changesetList.Add(new ChangesetViewModel() { ChangesetId = changeset.ChangesetId, Owner = changeset.Owner, Comment = changeset.Comment, CheckInDateTime = changeset.CreationDate });
-                    }
-                }
+				foreach (Changeset changeset in changesets)
+				{
+					if (!ignoreUsers.Any(n => changeset.Owner.ToLower().Contains(n) || changeset.OwnerDisplayName.ToLower().Contains(n)))
+					{
+						changesetList.Add(new ChangesetViewModel() { ChangesetId = changeset.ChangesetId, Owner = changeset.OwnerDisplayName ?? changeset.Owner, Comment = changeset.Comment, CheckInDateTime = changeset.CreationDate });
+					}
+				}
             }
             return changesetList;
         }
