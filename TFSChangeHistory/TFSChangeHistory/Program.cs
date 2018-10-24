@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -39,10 +39,14 @@ namespace TFSChangeHistory
             {
                 var request = ParseArgs(args);
                 var response = ChangesetManager.GetChangesetHistory(request);
-                Console.WriteLine("Comments | Author | Check-In Date | Changeset ID");
-                foreach (var changeset in response)
+
+				const string OUTPUTFORMATHEADER = "{0,-9} {1,-20} {2,10}  {3}";
+				Console.WriteLine(OUTPUTFORMATHEADER, "Changeset", "Author", "Check-In", "Comments");
+
+				const string OUTPUTFORMAT = "{0,-9} {1,-20} {2:yyyy-MM-dd}  {3}";
+				foreach (var changeset in response)
                 {
-                    Console.WriteLine("{0} | {1} | {2} | {3}", changeset.Comment, changeset.Owner, changeset.CheckInDateTime, changeset.ChangesetId);
+                    Console.WriteLine(OUTPUTFORMAT, changeset.ChangesetId, changeset.Owner, changeset.CheckInDateTime, changeset.Comment.Replace("\r", " ").Replace("\n", " "));
                 }
             }
             catch (ArgumentException aex)
@@ -87,9 +91,10 @@ namespace TFSChangeHistory
                         {
                             throw new ArgumentException("Value for argument -from is missing");
                         }
-                        if (DateTime.TryParse(args[index], out DateTime fromDate))
-                        {
-                            request.FromDate = fromDate;
+						if (DateTime.TryParse(args[index], out DateTime fromDate))
+						{
+							request.FromDate = fromDate;
+							if (request.ToDate == DateTime.MinValue) request.ToDate = new DateTime(2100, 1, 1); ;
                         }
                         else
                         {
@@ -105,8 +110,8 @@ namespace TFSChangeHistory
                         if (DateTime.TryParse(args[index], out DateTime toDate))
                         {
                             request.ToDate = toDate;
-                        }
-                        else
+						}
+						else
                         {
                             throw new ArgumentException("Value for argument -from is invalid");
                         }
